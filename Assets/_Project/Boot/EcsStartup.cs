@@ -1,68 +1,49 @@
-using _Project.Systems;
+using System;
+using _Project.Extensions;
 using Leopotam.Ecs;
 using UnityEngine;
 using Voody.UniLeo;
+using Zenject;
 
-public sealed class EcsStartup : MonoBehaviour
+public sealed class EcsStartup : IInitializable, ITickable, ILateTickable, IDisposable
 {
+    [Inject] readonly IInputService _inputService;
+    
     private EcsWorld _world;
     private EcsSystems _systems;
     private EcsSystems _systemsLate;
-
-   
-    private void Start()
+    
+    public void Initialize()
     {
-        // 1. Создаём мир
         _world = new EcsWorld();
 
-        // 2. Создаём набор систем
         _systems = new EcsSystems(_world);
         _systemsLate = new EcsSystems(_world);
 
         _systems.ConvertScene();
         _systemsLate.ConvertScene();
 
-        AddInjections();
-        AddOneFrames();
-        AddSystems();
-        
+
+        _systems.Inject(_inputService);
+
+        _systems.AddMovementFeature();
+
+
         _systems.Init();
         _systemsLate.Init();
-
     }
 
-    private void AddInjections()
-    {
-        
-    }
-
-    private void AddOneFrames()
-    {
-        
-    }
-    
-
-    private void AddSystems()
-    {
-        _systems
-            .Add(new PlayerInputSystem())
-            .Add(new PlayerMovementSystem());
-
-        _systemsLate.Add(new CameraFollowSystem());
-    }
-    
-
-    private void Update()
+    public void Tick()
     {
         _systems?.Run();
     }
 
-    private void LateUpdate()
+    public void LateTick()
     {
         _systemsLate?.Run();
     }
 
-    private void OnDestroy()
+    public void Dispose()
     {
         if (_systems != null)
         {
